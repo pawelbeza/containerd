@@ -194,6 +194,8 @@ func Run(name string, initFunc Init, opts ...BinaryOpts) {
 	ctx := context.Background()
 	ctx = log.WithLogger(ctx, log.G(ctx).WithField("runtime", name))
 
+	log.G(ctx).Info("TEST SHIM LOGGING")
+
 	if err := run(ctx, nil, initFunc, name, config); err != nil {
 		fmt.Fprintf(os.Stderr, "%s: %s", name, err)
 		os.Exit(1)

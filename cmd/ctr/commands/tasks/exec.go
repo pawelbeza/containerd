@@ -18,7 +18,6 @@ package tasks
 
 import (
 	"errors"
-	"io"
 	"net/url"
 	"os"
 
@@ -115,11 +114,11 @@ var execCommand = cli.Command{
 
 		var (
 			ioCreator cio.Creator
-			stdinC    = &stdinCloser{
-				stdin: os.Stdin,
-			}
-			con console.Console
+			stdinC    = cio.NewStdinCloser(os.Stdin)
+			con       console.Console
 		)
+
+		logrus.Info("CTR EXECUTING")
 
 		fifoDir := context.String("fifo-dir")
 		logURI := context.String("log-uri")
@@ -153,9 +152,10 @@ var execCommand = cli.Command{
 		if err != nil {
 			return err
 		}
-		stdinC.closer = func() {
+		stdinC.SetCloser(func() {
+			logrus.Info("CLOSING STDIN")
 			process.CloseIO(ctx, containerd.WithStdinCloser)
-		}
+		})
 		// if detach, we should not call this defer
 		if !detach {
 			defer process.Delete(ctx)
@@ -180,7 +180,9 @@ var execCommand = cli.Command{
 			sigc := commands.ForwardAllSignals(ctx, process)
 			defer commands.StopCatch(sigc)
 		}
+		logrus.Info("BEFORE RECEIVING STATUS")
 		status := <-statusC
+		logrus.Info("AFTER RECEIVING STATUS")
 		code, _, err := status.Result()
 		if err != nil {
 			return err
@@ -190,19 +192,4 @@ var execCommand = cli.Command{
 		}
 		return nil
 	},
-}
-
-type stdinCloser struct {
-	stdin  *os.File
-	closer func()
-}
-
-func (s *stdinCloser) Read(p []byte) (int, error) {
-	n, err := s.stdin.Read(p)
-	if err == io.EOF {
-		if s.closer != nil {
-			s.closer()
-		}
-	}
-	return n, err
 }

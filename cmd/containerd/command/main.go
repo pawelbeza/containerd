@@ -116,6 +116,8 @@ can be used and modified as necessary as a custom configuration.`
 			config      = defaultConfig()
 		)
 
+		log.G(ctx).Info("TEST LOG")
+
 		defer cancel()
 
 		// Only try to load the config if it either exists, or the user explicitly

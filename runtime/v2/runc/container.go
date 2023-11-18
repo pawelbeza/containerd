@@ -31,6 +31,7 @@ import (
 	cgroupsv2 "github.com/containerd/cgroups/v2"
 	"github.com/containerd/console"
 	"github.com/containerd/containerd/errdefs"
+	"github.com/containerd/containerd/log"
 	"github.com/containerd/containerd/mount"
 	"github.com/containerd/containerd/namespaces"
 	"github.com/containerd/containerd/pkg/process"
@@ -398,6 +399,7 @@ func (c *Container) Delete(ctx context.Context, r *task.DeleteRequest) (process.
 
 // Exec an additional process
 func (c *Container) Exec(ctx context.Context, r *task.ExecProcessRequest) (process.Process, error) {
+	log.G(ctx).Warn("RUNNING EXEC")
 	process, err := c.process.(*process.Init).Exec(ctx, c.Bundle, &process.ExecConfig{
 		ID:       r.ExecID,
 		Terminal: r.Terminal,
@@ -447,15 +449,18 @@ func (c *Container) Kill(ctx context.Context, r *task.KillRequest) error {
 
 // CloseIO of a process
 func (c *Container) CloseIO(ctx context.Context, r *task.CloseIORequest) error {
+	log.G(ctx).Info("CLOSING IO RUNC")
 	p, err := c.Process(r.ExecID)
 	if err != nil {
 		return err
 	}
 	if stdin := p.Stdin(); stdin != nil {
+		log.G(ctx).Info("STDIN IS NON NIL")
 		if err := stdin.Close(); err != nil {
 			return fmt.Errorf("close stdin: %w", err)
 		}
 	}
+	log.G(ctx).Info("STDIN IS NIL")
 	return nil
 }
 
